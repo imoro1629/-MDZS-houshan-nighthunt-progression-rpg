@@ -1,4 +1,4 @@
-Gemini 針對us寫的程式碼
+
 <!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
