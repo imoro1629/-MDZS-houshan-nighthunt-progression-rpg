@@ -1,0 +1,978 @@
+Gemini 針對us寫的程式碼
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <title>雲深小農記 - iOS 掌機 UI 優化沙盒 (Gemini 版)</title>
+  <style>
+    :root {
+      --bg-deep: #111b15;
+      --bg-panel: #17251e;
+      --bg-card: #1e3027;
+      --border-soft: rgba(163, 201, 183, 0.24);
+      --border-gold: rgba(246, 225, 181, 0.55);
+      --gold-title: #f6e1b5;
+      --jade-accent: #76b88e;
+      --ink-main: #eef4ea;
+      --ink-muted: #9eb3a6;
+      --hp-red: #d96b66;
+      --mp-blue: #6bb2d9;
+      --shadow-float: 0 8px 24px rgba(0, 0, 0, 0.45);
+    }
+
+    * {
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100dvh;
+      overflow: hidden;
+      background: var(--bg-deep);
+      color: var(--ink-main);
+      font-family: -apple-system, BlinkMacSystemFont, "PingFang TC", "Noto Sans TC", sans-serif;
+      touch-action: none;
+    }
+
+    #app {
+      position: relative;
+      width: 100%;
+      height: 100dvh;
+      display: flex;
+      flex-direction: column;
+      padding-top: env(safe-area-inset-top);
+      padding-bottom: env(safe-area-inset-bottom);
+      padding-left: env(safe-area-inset-left);
+      padding-right: env(safe-area-inset-right);
+      background: radial-gradient(circle at 50% 20%, #203429 0%, #111b15 85%);
+    }
+
+    /* 1. 頂部零抖動狀態列 (鎖定固定高度，防止文字跳動推擠畫布) */
+    .hud-header {
+      flex: 0 0 46px;
+      height: 46px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      padding: 0 10px;
+      background: rgba(17, 28, 22, 0.92);
+      border-bottom: 1px solid var(--border-soft);
+      z-index: 20;
+    }
+
+    .vitals-group {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-shrink: 0;
+    }
+
+    .bar-pill {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      background: rgba(10, 17, 13, 0.75);
+      border: 1px solid var(--border-soft);
+      border-radius: 999px;
+      padding: 3px 8px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    .bar-track {
+      width: 54px;
+      height: 7px;
+      background: #0a120e;
+      border-radius: 999px;
+      overflow: hidden;
+    }
+
+    .bar-fill-hp {
+      width: 85%;
+      height: 100%;
+      background: linear-gradient(90deg, #b84b46, #e8847f);
+      transition: width 0.15s ease;
+    }
+
+    .bar-fill-mp {
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, #4589b0, #85ccf2);
+      transition: width 0.15s ease;
+    }
+
+    /* 單行固定寬度提示框：絕不換行撐高頂欄 */
+    .notice-ticker {
+      flex: 1 1 auto;
+      min-width: 0;
+      text-align: center;
+      font-size: 12px;
+      color: var(--gold-title);
+      background: rgba(246, 225, 181, 0.08);
+      border: 1px solid rgba(246, 225, 181, 0.2);
+      border-radius: 999px;
+      padding: 3px 10px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .top-actions {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-shrink: 0;
+    }
+
+    .btn-mini {
+      height: 32px;
+      padding: 0 10px;
+      border-radius: 10px;
+      border: 1px solid var(--border-gold);
+      background: linear-gradient(180deg, #273d32, #1b2b23);
+      color: var(--gold-title);
+      font-size: 12px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .btn-mini:active {
+      transform: scale(0.95);
+      filter: brightness(1.15);
+    }
+
+    /* 2. 中央橫版畫布區 */
+    .stage-container {
+      position: relative;
+      flex: 1 1 auto;
+      width: 100%;
+      overflow: hidden;
+    }
+
+    #game-canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+
+    /* 懸浮蓄力/採集讀條 (不佔佈局空間) */
+    #charge-toast {
+      position: absolute;
+      top: 12px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: min(240px, 65vw);
+      background: rgba(17, 28, 22, 0.88);
+      border: 1px solid var(--border-gold);
+      border-radius: 999px;
+      padding: 4px 10px;
+      display: none;
+      align-items: center;
+      gap: 8px;
+      box-shadow: var(--shadow-float);
+      pointer-events: none;
+      z-index: 15;
+    }
+
+    #charge-toast.active {
+      display: flex;
+    }
+
+    #charge-label {
+      font-size: 11px;
+      color: var(--gold-title);
+      white-space: nowrap;
+      font-weight: 700;
+    }
+
+    .charge-track {
+      flex: 1;
+      height: 6px;
+      background: #0b1410;
+      border-radius: 999px;
+      overflow: hidden;
+    }
+
+    #charge-fill {
+      width: 0%;
+      height: 100%;
+      background: linear-gradient(90deg, #76b88e, #f6e1b5);
+    }
+
+    /* 3. 底部掌機觸控層 (懸浮透明疊加在畫布下方，最大化視野) */
+    .handheld-controls {
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      padding: 8px 14px 10px;
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      pointer-events: none;
+      z-index: 18;
+    }
+
+    /* 左側：無斷觸左右滑動方向盤 */
+    .move-pad {
+      pointer-events: auto;
+      position: relative;
+      width: 148px;
+      height: 66px;
+      border-radius: 33px;
+      background: rgba(18, 29, 23, 0.72);
+      backdrop-filter: blur(6px);
+      -webkit-backdrop-filter: blur(6px);
+      border: 1.5px solid rgba(163, 201, 183, 0.35);
+      box-shadow: var(--shadow-float);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 16px;
+    }
+
+    .move-arrow {
+      font-size: 20px;
+      font-weight: 800;
+      color: rgba(238, 244, 234, 0.45);
+      transition: transform 0.08s, color 0.08s;
+    }
+
+    .move-pad.dir-left .move-arrow.left,
+    .move-pad.dir-right .move-arrow.right {
+      color: var(--gold-title);
+      transform: scale(1.25);
+      text-shadow: 0 0 10px rgba(246, 225, 181, 0.6);
+    }
+
+    .move-knob {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      width: 44px;
+      height: 44px;
+      transform: translate(-50%, -50%);
+      border-radius: 50%;
+      background: radial-gradient(circle at 35% 35%, #3c5c4b, #203329);
+      border: 1.5px solid var(--border-gold);
+      box-shadow: 0 4px 10px rgba(0,0,0,0.4);
+      transition: transform 0.06s ease-out;
+      pointer-events: none;
+    }
+
+    .move-pad.dir-left .move-knob {
+      transform: translate(calc(-50% - 34px), -50%);
+    }
+
+    .move-pad.dir-right .move-knob {
+      transform: translate(calc(-50% + 34px), -50%);
+    }
+
+    /* 右側：扇形技能列 + 3顆核心動作大鈕 */
+    .right-cluster {
+      pointer-events: auto;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 8px;
+    }
+
+    /* Y/U/I/O 技能列 + Q切武 */
+    .skill-strip {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(17, 28, 22, 0.68);
+      backdrop-filter: blur(6px);
+      -webkit-backdrop-filter: blur(6px);
+      padding: 4px 6px;
+      border-radius: 16px;
+      border: 1px solid var(--border-soft);
+    }
+
+    .btn-weapon-swap {
+      height: 42px;
+      padding: 0 9px;
+      border-radius: 11px;
+      border: 1px solid var(--border-gold);
+      background: linear-gradient(180deg, #3b3120, #261f14);
+      color: var(--gold-title);
+      font-size: 11px;
+      font-weight: 700;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      line-height: 1.15;
+    }
+
+    .btn-skill-slot {
+      width: 44px;
+      height: 44px;
+      border-radius: 12px;
+      border: 1px solid rgba(140, 197, 235, 0.45);
+      background: rgba(34, 52, 66, 0.85);
+      color: #eef7ff;
+      font-size: 11px;
+      font-weight: 700;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 1px;
+      transition: transform 0.06s, background 0.1s;
+    }
+
+    .btn-skill-slot small {
+      font-size: 9px;
+      color: #9ecae6;
+    }
+
+    .btn-skill-slot.is-held {
+      transform: scale(0.92);
+      background: #4b7494;
+      border-color: var(--gold-title);
+    }
+
+    /* 3顆防誤觸核心大鈕：跳躍、互動、普攻 */
+    .core-buttons {
+      display: flex;
+      align-items: flex-end;
+      gap: 10px;
+    }
+
+    .btn-core {
+      border-radius: 50%;
+      border: 1.5px solid rgba(255, 255, 255, 0.3);
+      color: #fff;
+      font-weight: 800;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      box-shadow: var(--shadow-float);
+      transition: transform 0.06s, filter 0.06s;
+    }
+
+    .btn-core:active, .btn-core.is-held {
+      transform: scale(0.91);
+      filter: brightness(1.2);
+    }
+
+    .btn-jump {
+      width: 54px;
+      height: 54px;
+      font-size: 13px;
+      background: radial-gradient(circle at 30% 30%, #3d5c6e, #233742);
+      border-color: #8cc5eb;
+    }
+
+    .btn-interact {
+      width: 54px;
+      height: 54px;
+      font-size: 13px;
+      background: radial-gradient(circle at 30% 30%, #6e5735, #42331d);
+      border-color: #e6b86e;
+    }
+
+    .btn-attack {
+      width: 68px;
+      height: 68px;
+      font-size: 16px;
+      background: radial-gradient(circle at 30% 30%, #48785e, #264233);
+      border: 2px solid #a8e6c5;
+    }
+
+    .btn-core small {
+      font-size: 9px;
+      font-weight: 500;
+      opacity: 0.85;
+      margin-top: 1px;
+    }
+
+    /* 4. 《雲深據點》主介面彈窗 (Modal Drawer) */
+    #sanctuary-modal {
+      position: absolute;
+      inset: 0;
+      background: rgba(10, 16, 13, 0.86);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      z-index: 40;
+      display: none;
+      flex-direction: column;
+      padding: calc(10px + env(safe-area-inset-top)) calc(14px + env(safe-area-inset-right)) calc(10px + env(safe-area-inset-bottom)) calc(14px + env(safe-area-inset-left));
+    }
+
+    #sanctuary-modal.open {
+      display: flex;
+    }
+
+    .modal-frame {
+      flex: 1;
+      background: linear-gradient(180deg, #1a2a22 0%, #132019 100%);
+      border: 1.5px solid var(--border-gold);
+      border-radius: 18px;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      box-shadow: 0 16px 40px rgba(0, 0, 0, 0.65);
+    }
+
+    .modal-header {
+      flex: 0 0 48px;
+      padding: 0 14px;
+      background: rgba(15, 24, 19, 0.85);
+      border-bottom: 1px solid var(--border-soft);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .modal-title {
+      font-size: 15px;
+      font-weight: 800;
+      color: var(--gold-title);
+      letter-spacing: 0.06em;
+    }
+
+    /* 橫向可滑動分頁列 (熱區高度 >= 44px) */
+    .tab-bar {
+      flex: 0 0 46px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 0 12px;
+      background: rgba(13, 21, 17, 0.6);
+      border-bottom: 1px solid var(--border-soft);
+      overflow-x: auto;
+      scrollbar-width: none;
+    }
+
+    .tab-bar::-webkit-scrollbar {
+      display: none;
+    }
+
+    .tab-btn {
+      flex: 0 0 auto;
+      height: 34px;
+      padding: 0 14px;
+      border-radius: 999px;
+      border: 1px solid transparent;
+      background: transparent;
+      color: var(--ink-muted);
+      font-size: 13px;
+      font-weight: 600;
+    }
+
+    .tab-btn.active {
+      background: #2b4437;
+      border-color: var(--border-gold);
+      color: var(--gold-title);
+    }
+
+    .modal-body {
+      flex: 1;
+      padding: 12px;
+      overflow-y: auto;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 10px;
+      align-content: start;
+    }
+
+    .info-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-soft);
+      border-radius: 14px;
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .info-card h4 {
+      margin: 0;
+      font-size: 14px;
+      color: var(--gold-title);
+    }
+
+    .info-card p {
+      margin: 0;
+      font-size: 12px;
+      color: var(--ink-muted);
+      line-height: 1.45;
+    }
+
+    .btn-card-action {
+      height: 40px;
+      border-radius: 10px;
+      border: 1px solid var(--jade-accent);
+      background: #2b4a3a;
+      color: #eef8f2;
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .btn-card-action:active {
+      transform: scale(0.97);
+    }
+  </style>
+</head>
+<body>
+  <div id="app">
+    <!-- 頂部零抖動狀態列 -->
+    <header class="hud-header">
+      <div class="vitals-group">
+        <div class="bar-pill">
+          <span style="color:#f29b96;">血</span>
+          <div class="bar-track"><div class="bar-fill-hp" id="hp-bar"></div></div>
+        </div>
+        <div class="bar-pill">
+          <span style="color:#9ad4f5;">靈</span>
+          <div class="bar-track"><div class="bar-fill-mp" id="mp-bar"></div></div>
+        </div>
+      </div>
+
+      <div class="notice-ticker" id="notice-text">雲深後山・按住左下滑動移動，右側揮劍或長按技能蓄力</div>
+
+      <div class="top-actions">
+        <button class="btn-mini" id="btn-open-sanctuary">🏯 雲深據點</button>
+      </div>
+    </header>
+
+    <!-- 橫版測試畫布 -->
+    <main class="stage-container">
+      <canvas id="game-canvas"></canvas>
+
+      <!-- 蓄力/採集讀條懸浮提示 -->
+      <div id="charge-toast">
+        <span id="charge-label">符盤蓄力中</span>
+        <div class="charge-track"><div id="charge-fill"></div></div>
+      </div>
+
+      <!-- 底部掌機觸控區 -->
+      <div class="handheld-controls">
+        <!-- 左手滑動方向盤 -->
+        <div class="move-pad" id="move-pad">
+          <span class="move-arrow left">◀</span>
+          <div class="move-knob"></div>
+          <span class="move-arrow right">▶</span>
+        </div>
+
+        <!-- 右手技能與核心大鈕 -->
+        <div class="right-cluster">
+          <div class="skill-strip">
+            <button class="btn-weapon-swap" id="btn-swap-weapon">
+              <span id="weapon-name">佩劍</span>
+              <small>Q 切武</small>
+            </button>
+            <button class="btn-skill-slot" data-slot="0"><span class="sk-name">清風</span><small>Y</small></button>
+            <button class="btn-skill-slot" data-slot="1"><span class="sk-name">踏雪</span><small>U</small></button>
+            <button class="btn-skill-slot" data-slot="2"><span class="sk-name">松濤</span><small>I</small></button>
+            <button class="btn-skill-slot" data-slot="3"><span class="sk-name">長按蓄力</span><small>O</small></button>
+          </div>
+
+          <div class="core-buttons">
+            <button class="btn-core btn-jump" id="btn-jump">跳躍<small>SPACE</small></button>
+            <button class="btn-core btn-interact" id="btn-interact">採集<small>E 互動</small></button>
+            <button class="btn-core btn-attack" id="btn-attack">揮劍<small>J 普攻</small></button>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <!-- 《雲深據點》UI 測試彈窗 -->
+    <section id="sanctuary-modal">
+      <div class="modal-frame">
+        <div class="modal-header">
+          <span class="modal-title">🏯 雲深官邸・掌機 UI 測試面板</span>
+          <button class="btn-mini" id="btn-close-sanctuary">返回後山 ✕</button>
+        </div>
+        <nav class="tab-bar" id="tab-bar">
+          <button class="tab-btn active" data-tab="cultivate">吐納修煉</button>
+          <button class="tab-btn" data-tab="forge">五行煉器</button>
+          <button class="tab-btn" data-tab="assist">同人援助</button>
+          <button class="tab-btn" data-tab="bag">行囊丹藥</button>
+        </nav>
+        <div class="modal-body" id="modal-body"></div>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    // === 沙盒狀態與武器組定義 ===
+    const weapons = [
+      { name: "佩劍", atkLabel: "揮劍", skills: ["清風", "踏雪", "松濤", "劍氣蓄力"] },
+      { name: "朱砂符盤", atkLabel: "點符", skills: ["驅邪符", "五雷符", "烈火符", "破邪靈光"] },
+      { name: "青竹弓", atkLabel: "弓擊退", skills: ["竹羽箭", "破甲箭", "朱砂箭", "滿月蓄力"] }
+    ];
+    let weaponIdx = 0;
+
+    const state = {
+      dir: 0, // -1 左, 0 停, 1 右
+      x: 180,
+      y: 0,
+      vy: 0,
+      grounded: true,
+      face: 1,
+      slashTimer: 0,
+      charging: false,
+      chargeProg: 0,
+      chargeSkill: "",
+      floats: [],
+      particles: []
+    };
+
+    const noticeEl = document.getElementById("notice-text");
+    function setNotice(msg) {
+      noticeEl.textContent = msg;
+    }
+
+    // === 1. 左手滑動方向盤邏輯 (防滑出斷觸) ===
+    const movePad = document.getElementById("move-pad");
+    let movePointerId = null;
+
+    function updateDirectionFromTouch(clientX) {
+      const rect = movePad.getBoundingClientRect();
+      const relX = clientX - rect.left;
+      const deadZone = 10;
+      const center = rect.width / 2;
+      if (relX < center - deadZone) {
+        state.dir = -1;
+        state.face = -1;
+        movePad.classList.add("dir-left");
+        movePad.classList.remove("dir-right");
+      } else if (relX > center + deadZone) {
+        state.dir = 1;
+        state.face = 1;
+        movePad.classList.add("dir-right");
+        movePad.classList.remove("dir-left");
+      } else {
+        state.dir = 0;
+        movePad.classList.remove("dir-left", "dir-right");
+      }
+    }
+
+    movePad.addEventListener("pointerdown", (e) => {
+      e.preventDefault();
+      movePointerId = e.pointerId;
+      movePad.setPointerCapture(e.pointerId);
+      updateDirectionFromTouch(e.clientX);
+    });
+
+    movePad.addEventListener("pointermove", (e) => {
+      if (e.pointerId !== movePointerId) return;
+      updateDirectionFromTouch(e.clientX);
+    });
+
+    const resetMovePad = (e) => {
+      if (e.pointerId !== movePointerId) return;
+      movePointerId = null;
+      state.dir = 0;
+      movePad.classList.remove("dir-left", "dir-right");
+    };
+    movePad.addEventListener("pointerup", resetMovePad);
+    movePad.addEventListener("pointercancel", resetMovePad);
+
+    // === 2. 核心動作鈕與技能長按蓄力 ===
+    function spawnFloatText(text, color = "#f6e1b5") {
+      state.floats.push({
+        x: state.x + (Math.random() * 24 - 12),
+        y: state.y - 54,
+        text,
+        color,
+        life: 0.9
+      });
+    }
+
+    function spawnSlashParticles(color = "#9ed4b8") {
+      for (let i = 0; i < 8; i++) {
+        state.particles.push({
+          x: state.x + state.face * 28,
+          y: state.y - 24,
+          vx: state.face * (80 + Math.random() * 140),
+          vy: (Math.random() - 0.5) * 120,
+          color,
+          life: 0.35
+        });
+      }
+    }
+
+    document.getElementById("btn-jump").addEventListener("pointerdown", (e) => {
+      e.preventDefault();
+      if (state.grounded) {
+        state.vy = -340;
+        state.grounded = false;
+        spawnFloatText("身法躍起", "#9ad4f5");
+      }
+    });
+
+    document.getElementById("btn-interact").addEventListener("pointerdown", (e) => {
+      e.preventDefault();
+      spawnFloatText("採得・清心草 +1", "#76b88e");
+      setNotice("【採集成功】採得清心草 +1，已收入行囊");
+    });
+
+    document.getElementById("btn-attack").addEventListener("pointerdown", (e) => {
+      e.preventDefault();
+      state.slashTimer = 0.22;
+      const w = weapons[weaponIdx];
+      spawnSlashParticles(weaponIdx === 1 ? "#f29b96" : "#9ed4b8");
+      spawnFloatText(`${w.atkLabel} -28`, "#fff8df");
+      setNotice(`施展【${w.name}・${w.atkLabel}】命中木樁`);
+    });
+
+    // 切換武器 (同步更新 Y/U/I/O)
+    function refreshWeaponUI() {
+      const w = weapons[weaponIdx];
+      document.getElementById("weapon-name").textContent = w.name;
+      document.getElementById("btn-attack").innerHTML = `${w.atkLabel}<small>J 普攻</small>`;
+      document.querySelectorAll(".btn-skill-slot").forEach((btn, idx) => {
+        btn.querySelector(".sk-name").textContent = w.skills[idx];
+      });
+    }
+
+    document.getElementById("btn-swap-weapon").addEventListener("pointerdown", (e) => {
+      e.preventDefault();
+      weaponIdx = (weaponIdx + 1) % weapons.length;
+      refreshWeaponUI();
+      spawnFloatText(`切換：${weapons[weaponIdx].name}`, "#f6e1b5");
+      setNotice(`已切換主手為【${weapons[weaponIdx].name}】，快捷欄已同步更新`);
+    });
+
+    // 技能快捷欄（第 4 格 O 支援長按蓄力）
+    const chargeToast = document.getElementById("charge-toast");
+    const chargeFill = document.getElementById("charge-fill");
+    const chargeLabel = document.getElementById("charge-label");
+
+    document.querySelectorAll(".btn-skill-slot").forEach((btn) => {
+      const slot = Number(btn.dataset.slot);
+      btn.addEventListener("pointerdown", (e) => {
+        e.preventDefault();
+        btn.setPointerCapture(e.pointerId);
+        btn.classList.add("is-held");
+        const skName = weapons[weaponIdx].skills[slot];
+
+        if (slot === 3) {
+          state.charging = true;
+          state.chargeProg = 0;
+          state.chargeSkill = skName;
+          chargeLabel.textContent = `${skName}中...`;
+          chargeToast.classList.add("active");
+        } else {
+          state.slashTimer = 0.28;
+          spawnSlashParticles("#8cc5eb");
+          spawnFloatText(`訣法・${skName}！`, "#8cc5eb");
+          setNotice(`消耗靈力施展【${skName}】`);
+        }
+      });
+
+      const endSkill = () => {
+        btn.classList.remove("is-held");
+        if (slot === 3 && state.charging) {
+          const full = state.chargeProg >= 0.95;
+          state.charging = false;
+          chargeToast.classList.remove("active");
+          state.slashTimer = 0.35;
+          spawnSlashParticles(full ? "#f6e1b5" : "#9ed4b8");
+          spawnFloatText(full ? `滿蓄・${state.chargeSkill} 暴擊！` : `${state.chargeSkill} 釋放`, "#f6e1b5");
+          setNotice(full ? `【圓滿蓄力】釋放 ${state.chargeSkill}，威力提升 180%！` : `提前釋放 ${state.chargeSkill}`);
+        }
+      };
+      btn.addEventListener("pointerup", endSkill);
+      btn.addEventListener("pointercancel", endSkill);
+    });
+
+    // === 3. 《雲深據點》分頁彈窗互動 ===
+    const modal = document.getElementById("sanctuary-modal");
+    const modalBody = document.getElementById("modal-body");
+    const tabContents = {
+      cultivate: [
+        { title: "周天吐納打坐", desc: "運行雲深心法，將採集所得靈氣轉化為根基修為。", btn: "運功一個周天 (+15 修為)" },
+        { title: "天人五感淬鍊", desc: "提升神識敏銳度，夜獵時更易察覺隱匿邪祟與稀有藥草。", btn: "淬鍊五感 (消耗 2 靈石)" }
+      ],
+      forge: [
+        { title: "五行圖譜煉器爐", desc: "投入基底礦石與金木水火土靈材。6階上品基礎成功率 70%，失敗退還四行靈材。", btn: "試煉・青竹神弓" },
+        { title: "古琴伽藍開光", desc: "為隨身古琴加持寺院梵音，撥弦命中邪祟有機率觸發鎮魂定身。", btn: "香火開光 (消耗 5 功德)" }
+      ],
+      assist: [
+        { title: "藍氏雙璧・劍琴合鳴", desc: "【羈絆 Lv.6】戰鬥中召喚劍氣護體並恢復全隊靈力。", btn: "設為夜獵首發援助" },
+        { title: "夷陵老祖・陳情鬼笛", desc: "【羈絆 Lv.6】吹奏詭譎笛音，大範圍震懾並削弱怨靈防禦。", btn: "贈送天子笑 (+好感)" }
+      ],
+      bag: [
+        { title: "雲深清心丹 × 5", desc: "立即恢復 45 點氣血並驅散輕微屍毒，戰鬥中冷卻 8 秒。", btn: "服食測試" },
+        { title: "破邪朱砂箭 × 24", desc: "專剋純靈體游魂與怨靈的黑色怨氣條，需裝備弓類施放。", btn: "設為快捷箭種" }
+      ]
+    };
+
+    function renderTab(tabKey) {
+      modalBody.innerHTML = tabContents[tabKey].map(item => `
+        <div class="info-card">
+          <div>
+            <h4>${item.title}</h4>
+            <p style="margin-top:6px;">${item.desc}</p>
+          </div>
+          <button class="btn-card-action" onclick="setNotice('【據點操作】已執行：${item.title}')">${item.btn}</button>
+        </div>
+      `).join("");
+    }
+
+    document.getElementById("btn-open-sanctuary").addEventListener("click", () => {
+      modal.classList.add("open");
+      renderTab("cultivate");
+    });
+
+    document.getElementById("btn-close-sanctuary").addEventListener("click", () => {
+      modal.classList.remove("open");
+    });
+
+    document.querySelectorAll(".tab-btn").forEach(btn => {
+      btn.addEventListener("click", () => {
+        document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
+        btn.classList.add("active");
+        renderTab(btn.dataset.tab);
+      });
+    });
+
+    // === 4. Canvas 橫版竹林與 Q 版角色即時互動迴圈 ===
+    const canvas = document.getElementById("game-canvas");
+    const ctx = canvas.getContext("2d");
+
+    function resizeCanvas() {
+      const rect = canvas.parentElement.getBoundingClientRect();
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      canvas.width = rect.width * dpr;
+      canvas.height = rect.height * dpr;
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    }
+    window.addEventListener("resize", resizeCanvas);
+    resizeCanvas();
+
+    let lastTime = performance.now();
+    function loop(now) {
+      const dt = Math.min(0.05, (now - lastTime) / 1000);
+      lastTime = now;
+
+      const w = canvas.parentElement.clientWidth;
+      const h = canvas.parentElement.clientHeight;
+      const groundY = h - 92;
+
+      // 物理更新
+      state.x += state.dir * 210 * dt;
+      state.x = Math.max(40, Math.min(w - 40, state.x));
+
+      if (!state.grounded) {
+        state.vy += 880 * dt;
+        state.y += state.vy * dt;
+        if (state.y >= groundY) {
+          state.y = groundY;
+          state.vy = 0;
+          state.grounded = true;
+        }
+      } else {
+        state.y = groundY;
+      }
+
+      if (state.slashTimer > 0) state.slashTimer -= dt;
+
+      if (state.charging) {
+        state.chargeProg = Math.min(1, state.chargeProg + dt / 0.85);
+        chargeFill.style.width = `${Math.round(state.chargeProg * 100)}%`;
+      }
+
+      // 繪製國風遠山與竹影背景
+      ctx.clearRect(0, 0, w, h);
+      const skyGrad = ctx.createLinearGradient(0, 0, 0, groundY);
+      skyGrad.addColorStop(0, "#192b22");
+      skyGrad.addColorStop(1, "#294235");
+      ctx.fillStyle = skyGrad;
+      ctx.fillRect(0, 0, w, groundY);
+
+      // 遠景竹林剪影
+      ctx.fillStyle = "rgba(18, 32, 25, 0.55)";
+      for (let bx = 30; bx < w; bx += 75) {
+        ctx.fillRect(bx, 20, 6, groundY - 20);
+        ctx.fillRect(bx + 22, 45, 4, groundY - 45);
+      }
+
+      // 青石地面
+      ctx.fillStyle = "#16241d";
+      ctx.fillRect(0, groundY, w, h - groundY);
+      ctx.strokeStyle = "#4d735e";
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(0, groundY);
+      ctx.lineTo(w, groundY);
+      ctx.stroke();
+
+      // 練功木樁
+      const dummyX = Math.min(w - 90, w * 0.68);
+      ctx.fillStyle = "#6e5239";
+      ctx.fillRect(dummyX - 10, groundY - 46, 20, 46);
+      ctx.fillStyle = "#a37b56";
+      ctx.fillRect(dummyX - 22, groundY - 34, 44, 8);
+
+      // Q版門生角色
+      ctx.save();
+      ctx.translate(state.x, state.y);
+      // 抹額與白衣剪影
+      ctx.fillStyle = "#eef4ea";
+      ctx.beginPath();
+      ctx.roundRect(-12, -36, 24, 36, 8);
+      ctx.fill();
+      // 頭部
+      ctx.fillStyle = "#ffe6cf";
+      ctx.beginPath();
+      ctx.arc(0, -44, 11, 0, Math.PI * 2);
+      ctx.fill();
+      // 抹額飄帶
+      ctx.fillStyle = "#9ad4f5";
+      ctx.fillRect(-11, -48, 22, 3);
+      ctx.fillRect(-state.face * 16, -47, 7, 3);
+
+      // 揮砍劍弧特效
+      if (state.slashTimer > 0) {
+        ctx.strokeStyle = "#b8f2d4";
+        ctx.lineWidth = 4;
+        ctx.beginPath();
+        ctx.arc(state.face * 10, -24, 34, state.face > 0 ? -0.9 : Math.PI - 0.9, state.face > 0 ? 0.8 : Math.PI + 0.8);
+        ctx.stroke();
+      }
+      ctx.restore();
+
+      // 粒子與飄字
+      state.particles = state.particles.filter(p => (p.life -= dt) > 0);
+      for (const p of state.particles) {
+        p.x += p.vx * dt;
+        p.y += p.vy * dt;
+        ctx.fillStyle = p.color;
+        ctx.fillRect(p.x, p.y, 4, 4);
+      }
+
+      state.floats = state.floats.filter(f => (f.life -= dt) > 0);
+      ctx.font = "bold 13px sans-serif";
+      ctx.textAlign = "center";
+      for (const f of state.floats) {
+        f.y -= 32 * dt;
+        ctx.fillStyle = f.color;
+        ctx.fillText(f.text, f.x, f.y);
+      }
+
+      requestAnimationFrame(loop);
+    }
+    requestAnimationFrame(loop);
+  </script>
+</body>
+</html>
