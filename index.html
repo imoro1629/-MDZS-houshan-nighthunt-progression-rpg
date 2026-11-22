@@ -717,6 +717,23 @@
         font-size: 0.75rem;
       }
     }
+
+    /* dev-gpt-ui: landscape touch layout; legacy actions remain available */
+    .controls, .controls button { -webkit-user-select:none; user-select:none; -webkit-touch-callout:none; }
+    .controls button { touch-action:none; }
+    .action-cluster [data-control="gather"] { order:70; background:#486e56; border-color:#98c2a5; }
+    .action-cluster [data-control="slash"] { order:65; }
+    .action-cluster #quick-y { order:40; }
+    .action-cluster #quick-u { order:41; }
+    .action-cluster #quick-i { order:42; }
+    .action-cluster #quick-o { order:43; }
+    .action-cluster [data-control="chant"] { display:none; }
+    @media (pointer:coarse) and (orientation:landscape) {
+      .controls { padding:0.22rem 0.45rem; gap:0.35rem; }
+      .dpad { flex-shrink:0; grid-template-columns:repeat(3,40px); grid-template-rows:repeat(2,38px); gap:3px; }
+      .action-cluster { max-width:calc(100% - 132px); gap:0.22rem; }
+      .action-cluster button { min-width:45px; padding:0.3rem 0.35rem; font-size:0.73rem; }
+    }
   </style>
 </head>
 <body>
@@ -813,7 +830,7 @@
           <small id="charm-stock">餘 6</small>
         </button>
         <button type="button" data-control="chant"><span id="chant-label">誦經</span><small id="key-chant">R</small></button>
-        <button type="button" data-control="gather"><span id="gather-btn-label">採集</span><small id="key-gather">E</small></button>
+        <button type="button" data-control="gather" class="btn-gather"><span id="gather-btn-label">採集</span><small id="key-gather">E</small></button>
         <button type="button" class="btn-portal" data-control="flight">傳送陣<small id="key-flight">F</small></button>
         <button type="button" data-control="swap">換手<small id="key-swap">Q</small></button>
         <button type="button" id="quick-y" data-control="quick0"><span id="quick-label-y">清風</span><small id="quick-key-y">Y</small></button>
@@ -1062,10 +1079,10 @@
       slash: ["普通攻擊", "KeyJ"],
       dodge: ["閃避", "ShiftLeft"],
       skill: ["兵器招式", "KeyK"],
-      quick0: ["快捷欄 1", "KeyY"],
-      quick1: ["快捷欄 2", "KeyU"],
-      quick2: ["快捷欄 3", "KeyI"],
-      quick3: ["快捷欄 4", "KeyO"],
+      quick0: ["Y 快捷槽（待接入道具）", "KeyY"],
+      quick1: ["U 技能一", "KeyU"],
+      quick2: ["I 技能二", "KeyI"],
+      quick3: ["O 技能三", "KeyO"],
       swap: ["切換主副武器", "KeyQ"],
       gear: ["打開裝備欄", "KeyP"],
       jump: ["跳躍", "Space"],
