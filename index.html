@@ -154,14 +154,6 @@
       border: 1px solid rgba(240, 179, 98, 0.4);
     }
 
-    .badge-ward {
-      font-size: 0.8rem;
-      color: #e6f7ff;
-      background: rgba(54, 110, 138, 0.55);
-      padding: 0.2rem 0.55rem;
-      border-radius: 8px;
-      border: 1px solid #9be0ff;
-    }
 
     .hud-tools {
       display: flex;
@@ -731,7 +723,6 @@
         <span class="stat-pill" id="time-hud">白天 · 3:00</span>
         <span class="stat-pill" id="active-weapon-hud" style="color:#f5dfb0;">主手 · 藍氏配劍</span>
         <span id="night-warning" class="badge-warn" aria-live="polite"></span>
-        <span id="spirit-ward" class="badge-ward" hidden>護體經文 · 邪傷減半</span>
       </div>
       <div class="hud-tools">
         <button type="button" id="gear-open" aria-expanded="false">武器欄</button>
@@ -804,15 +795,10 @@
           <span id="slash-label">揮劍</span>
           <small id="arrow-stock" hidden>箭 18 · 耐40</small>
         </button>
-        <button type="button" class="btn-skill" data-control="skill">
-          <span id="skill-label">劍訣</span>
-          <small id="key-skill">K</small>
-        </button>
         <button type="button" class="btn-charm" data-control="charm" title="短按速發，長按灌注靈力可傷邪祟">
           <span id="charm-label">驅邪符</span>
           <small id="charm-stock">餘 6</small>
         </button>
-        <button type="button" data-control="chant"><span id="chant-label">誦經</span><small id="key-chant">R</small></button>
         <button type="button" data-control="gather"><span id="gather-btn-label">採集</span><small id="key-gather">E</small></button>
         <button type="button" class="btn-portal" data-control="flight">傳送陣<small id="key-flight">F</small></button>
         <button type="button" data-control="swap">換手<small id="key-swap">Q</small></button>
@@ -927,7 +913,7 @@
       <li><strong>傳送陣切換地圖（F 鍵）</strong>：在橫版地圖上，必須<strong>踩在傳送陣範圍內</strong>並按 <code>F</code> 鍵才會傳送回雲深不知處；在雲深據點按 <code>F</code> 鍵（或點傳送出發）即可傳送進山。若重傷倒地，可直接點上方「煙火撤離」返回雲深。</li>
       <li><strong>主副武器切換與 YUIO 技能組</strong>：按 <code>Q</code> 鍵會將副武器與主武器互換，<code>Y / U / I / O</code> 快捷欄會同步切換為該武器綁定的技能組。</li>
       <li><strong>弓箭與驅邪箭矢</strong>：普通羽箭可射傷妖獸與有紅條肉身的「走屍」；在「符籙與羽箭」製作「破邪朱砂箭」並於背包或武器欄切換裝填，即可直接射傷純靈體（游魂、怨靈）的黑色怨氣！</li>
-      <li><strong>寺院開光與功德超渡</strong>：在寺院可為<strong>古琴開光（伽藍之音）</strong>，使琴音額外鎮住邪祟；累積<strong>功德</strong>後，在野外按 <code>R</code> 誦經可消耗 2 點功德直接超渡一般與半血菁英邪祟（首領級單位會顯示「怨氣深重無法超渡」）。</li>
+      <li><strong>寺院開光與功德</strong>：在寺院可為<strong>古琴開光（伽藍之音）</strong>，使琴音額外鎮住邪祟；香火與善舉可累積功德。</li>
     </ul>
     <form method="dialog">
       <button value="close">明白了</button>
@@ -940,7 +926,7 @@
     <p>入夜後白日妖獸已歸巢，山道上會出現<strong>游魂、走屍與怨靈</strong>。</p>
     <ul>
       <li><strong>游魂 / 怨靈</strong>只有黑色「怨氣」條，純物理刀劍與普通羽箭會直接穿過。</li>
-      <li>使用<strong>古琴（寺院開光可獲伽藍之音鎮邪）、耗靈劍訣、破邪朱砂箭、誦經（R，有功德可超渡）</strong>，或<strong>長按符籙（L）灌注靈力</strong>即可消去邪祟怨氣！</li>
+      <li>使用<strong>古琴（寺院開光可獲伽藍之音鎮邪）、耗靈劍訣、破邪朱砂箭</strong>，或<strong>長按符籙（L）灌注靈力</strong>即可消去邪祟怨氣！</li>
     </ul>
     <form method="dialog">
       <button value="close">謹記在心</button>
@@ -993,7 +979,6 @@
     const maxPixelRatio = 2;
     const forgeBlueprintLevel = 2;
     const maxStudyRank = 5;
-    const exorciseMeritCost = 2;
 
     let viewWidth = 960;
     let world = homeWorld;
@@ -1061,7 +1046,6 @@
     const keyboardActions = {
       slash: ["普通攻擊", "KeyJ"],
       dodge: ["閃避", "ShiftLeft"],
-      skill: ["兵器招式", "KeyK"],
       quick0: ["快捷欄 1", "KeyY"],
       quick1: ["快捷欄 2", "KeyU"],
       quick2: ["快捷欄 3", "KeyI"],
@@ -1072,7 +1056,6 @@
       flight: ["傳送陣傳送", "KeyF"],
       gather: ["採集／拾取", "KeyE"],
       charm: ["使用符籙（長按蓄力）", "KeyL"],
-      chant: ["誦經／功德超渡", "KeyR"]
     };
     const defaultKeyboard = Object.fromEntries(Object.entries(keyboardActions).map(([k, [, code]]) => [k, code]));
     let keymap = {};
@@ -1102,8 +1085,8 @@
         if (code) keymap[code] = action;
       }
       for (const [action, elId] of [
-        ["jump", "key-jump"], ["dodge", "key-dodge"], ["skill", "key-skill"],
-        ["chant", "key-chant"], ["gather", "key-gather"], ["flight", "key-flight"], ["swap", "key-swap"],
+        ["jump", "key-jump"], ["dodge", "key-dodge"],
+        ["gather", "key-gather"], ["flight", "key-flight"], ["swap", "key-swap"],
         ["quick0", "quick-key-y"], ["quick1", "quick-key-u"], ["quick2", "quick-key-i"], ["quick3", "quick-key-o"]
       ]) {
         const el = byId(elId);
@@ -1243,7 +1226,6 @@
     };
     const qinBasicAttack = { name: "琴音攻擊", cost: 1, cooldown: 0.40, radius: 160, damage: 16, color: "#a8d7ed" };
 
-    const chant = { cost: 2, radius: 165, damage: 6, wardTime: 4 };
 
     const manuals = {
       clear: { name: "清風劍訣", text: swordArts.clear.text },
@@ -1253,7 +1235,6 @@
       stay: { name: "留君引譜", text: qinSongs.stay.text },
       purify: { name: "清暝曲譜", text: qinSongs.purify.text },
       heal: { name: "百草單方", text: "研讀與製藥熟練後，能提高丹藥恢復量。" },
-      chant: { name: "清心經卷", text: "寺院領取經書後隨時可以誦經；有功德時可消耗 2 點功德直接超渡邪祟。" }
     };
 
     const weaponSkillDescriptions = {
@@ -1307,7 +1288,6 @@
       silver: 20,
       merit: 0,
       contribution: 0,
-      scripture: false,
       nightGuideSeen: false,
       epoch: Date.now(),
       homeClears: [],
@@ -1379,13 +1359,15 @@
             gear: { ...defaultJourney().gear, ...data.journey.gear },
             stock: { ...defaultJourney().stock, ...data.journey.stock },
             durability: { ...defaultJourney().durability, ...data.journey.durability },
-            keyboard: { ...defaultKeyboard, ...data.journey.keyboard },
+            keyboard: Object.fromEntries(Object.entries({...defaultKeyboard, ...data.journey.keyboard}).filter(([key]) => Object.hasOwn(defaultKeyboard, key))),
             shortcuts: {
               main: Array.isArray(data.journey.shortcuts?.main) ? data.journey.shortcuts.main : defaultJourney().shortcuts.main,
               off: Array.isArray(data.journey.shortcuts?.off) ? data.journey.shortcuts.off : defaultJourney().shortcuts.off
             }
           };
         }
+          delete journey.scripture;
+          delete journey.copies.chant;
         if (data.bag) bag = { ...bag, ...data.bag };
         if (data.potions) potions = { ...potions, ...data.potions };
         if (data.routine) routine = { ...routine, ...data.routine };
@@ -1468,7 +1450,6 @@
       const t = w.type || "劍";
       const slashNames = { "劍": "揮劍", "刀": "劈斬", "弓": "射箭", "符": "催符", "琴": "撥弦" };
       byId("slash-label").textContent = slashNames[t] || w.label || "攻擊";
-      byId("skill-label").textContent = t === "弓" ? "弓身擊退" : (w.skill || "招式");
 
       const weaponsMap = gearWeapons();
       const durText = mainKey && mainKey !== "qin" ? " (" + getDurability(mainKey) + "/" + weaponMaxDurability(mainKey) + ")" : "";
@@ -1899,7 +1880,7 @@
         '<button type="button" data-copy="' + key + '"' + (journey.copies[key] ? ' disabled' : '') + '>' +
         (journey.copies[key] ? "抄本已收入背包" : "抄寫 · 免費") + '</button></article>';
       const qinCopies = Object.entries(qinSongs).map(copyCard).join("");
-      const otherCopies = Object.entries(manuals).filter(([key]) => key !== "chant" && !Object.hasOwn(qinSongs, key)).map(copyCard).join("");
+      const otherCopies = Object.entries(manuals).filter(([key]) => !Object.hasOwn(qinSongs, key)).map(copyCard).join("");
       byId("recipes").innerHTML = '<h2 class="library-heading">免費閱覽</h2>' + freeBooks +
         '<h2 class="library-heading">古琴入門大譜曲譜</h2><p class="library-heading copy-tip">抄寫進背包後就會放進抄本列表；每次研讀花 1 精力，實戰奏效累積熟練。</p>' + qinCopies +
         '<h2 class="library-heading">其他劍訣抄本</h2>' + otherCopies +
@@ -2056,8 +2037,7 @@
     function renderTemple() {
       const button = (label, action, item = "", disabled = false) => '<button type="button" data-temple-action="' + action + '" data-item="' + item + '"' + (disabled ? " disabled" : "") + '>' + label + '</button>';
       const qins = Object.entries(gearWeapons()).filter(([key]) => equippedWeapon(key).type === "琴");
-      byId("recipes").innerHTML = '<article class="recipe"><h2>寺院 · 功德 ' + journey.merit + '</h2><p>香火與善舉幫助山民與往生靈魂，可累積功德。野外誦經（' + actionKeyName("chant") + ' 鍵）可消耗 <strong>2 點功德</strong>直接超渡一般與半血菁英邪祟。</p>' +
-        button(journey.scripture ? "已領經書" : "領取《清心經卷》", "scripture", "", journey.scripture) +
+      byId("recipes").innerHTML = '<article class="recipe"><h2>寺院 · 功德 ' + journey.merit + '</h2><p>香火與善舉幫助山民與往生靈魂，可累積功德。</p>' +
         '<p>香油錢 10 兩，功德 +1。持有 ' + journey.silver + ' 兩。</p>' + button("香油錢 10 兩", "donate", "", journey.silver < 10) + '</article>' +
         '<article class="recipe"><h2>請僧人開光 · 伽藍之音</h2><p>為古琴注入伽藍梵音開光後，撥弦（普攻或曲譜）命中邪祟時可額外震懾並<strong>鎮住對方 1.4 秒</strong>。</p>' +
         (qins.length ? qins.map(([key, name]) => button(name + (journey.blessedQins[key] ? " · 已開光（伽藍之音）" : " · 請僧人開光"), "bless", key, journey.blessedQins[key])).join("") :
@@ -2072,11 +2052,7 @@
     function templeAction(action, key) {
       if (!returned || returnTab !== "temple") return;
       let message;
-      if (action === "scripture" && !journey.scripture) {
-        journey.scripture = true;
-        journey.copies.chant = { read: 0, practice: 0 };
-        message = "僧人贈《清心經卷》一冊，已收入抄本，現在可以誦經與功德超渡了。";
-      } else if (action === "donate" && journey.silver >= 10) {
+      if (action === "donate" && journey.silver >= 10) {
         journey.silver -= 10;
         journey.merit++;
         message = "香油錢 10 兩，功德 +1。";
@@ -2333,8 +2309,6 @@
       byId("mana-text").textContent = player.mana + " / " + maxMana;
       const meritHud = byId("merit-hud");
       if (meritHud) meritHud.textContent = "功德 " + journey.merit;
-      const chantLabel = byId("chant-label");
-      if (chantLabel) chantLabel.textContent = journey.merit >= exorciseMeritCost ? "誦經超渡" : "誦經";
 
       const charmRecipe = ammoRecipes[journey.gear.charm];
       byId("charm-stock").textContent = "餘 " + journey.stock[journey.gear.charm];
@@ -2351,8 +2325,6 @@
         const action = button.dataset.control;
         if (action === "gather" || action === "flight" || action.startsWith("quick")) continue;
         button.disabled = !!result || (action === "charm" && !journey.stock[journey.gear.charm]) ||
-          (action === "skill" && wType !== "弓" && player.mana < skillCost) ||
-          (action === "chant" && player.mana < chant.cost) ||
           (action === "slash" && qin && player.mana < qinBasicAttack.cost);
       }
     }
@@ -2381,10 +2353,9 @@
       player = {
         x: 75, y: ground, vy: 0, platform: true, ladder: null, face: 1,
         hp: maxHp, mana: maxMana, dodgeUntil: 0, dodgeReady: 0, dodgeLockUntil: 0,
-        evadedUntil: 0, guardUntil: 0, wardUntil: 0, cooldown: 0, jumpGrace: 0, invincible: 0,
+        evadedUntil: 0, guardUntil: 0, cooldown: 0, jumpGrace: 0, invincible: 0,
         walk: false, motion: null, gait: 0
       };
-      byId("spirit-ward").hidden = true;
       byId("rescue-open").classList.remove("btn-urgent");
       enemies = route?.enemies ?? [
         makeEnemy("山豬", 545, 25, 1),
@@ -3048,10 +3019,6 @@
         }
       }
 
-      if (player.wardUntil && player.wardUntil <= time) {
-        player.wardUntil = 0;
-        byId("spirit-ward").hidden = true;
-      }
       if (wolfCall && time >= wolfCall.until) wolfCall = null;
       player.cooldown = Math.max(0, player.cooldown - dt);
       player.invincible = Math.max(0, player.invincible - dt);
@@ -3273,7 +3240,6 @@
         return;
       }
       if (hasQinInHand() && action === "skill") { playQin(); return; }
-      if (action === "chant") { chantVerse(); return; }
       if (Object.hasOwn(moves, action)) {
         if (player.cooldown > 0) attackQueue = { kind: action, until: time + 0.16 };
         else strike(action);
@@ -3972,7 +3938,7 @@
         const hasSword = [journey.gear.main, journey.gear.off].some(key => key && (equippedWeapon(key).type ?? "劍") === "劍");
         message = hasSword
           ? "未帶古琴 · 只能用劍訣、破邪朱砂箭或蓄力符籙驅邪。"
-          : "未帶古琴 · 可用破邪朱砂箭、長按符籙灌靈或功德超渡（R）。";
+          : "未帶古琴 · 可用破邪朱砂箭或長按符籙灌靈。";
       }
       if (warning.textContent !== message) warning.textContent = message;
     }
@@ -4027,7 +3993,7 @@
           spirits.push(makeSpirit(nightClearingStart + 360, "spiritLord", 2));
         }
         say(currentRoute ? "走屍有肉身，羽箭、耗靈招式與蓄力符籙皆可消去邪祟。" :
-          "白日妖獸已歸巢。夜幕下邪祟出沒，奏琴、破邪朱砂箭、蓄力符籙或消耗功德誦經皆可驅邪超渡。");
+          "白日妖獸已歸巢。夜幕下邪祟出沒，奏琴、破邪朱砂箭或蓄力符籙皆可驅邪。");
       }
     }
     function spiritAttributes(spirit) {
@@ -4088,7 +4054,7 @@
         spirit.x += Math.sign(dx) * Math.min(Math.abs(dx), dt * stats.speed);
         if (Math.abs(dx) < 34 && ground - player.y < 56 && spirit.strikeAt <= time) {
           spirit.strikeAt = time + 1.25;
-          const damage = player.wardUntil > time ? Math.ceil(stats.damage / 2) : stats.damage;
+          const damage = stats.damage;
           takeHit(damage, Math.sign(dx) || 1);
         }
       }
@@ -4165,64 +4131,6 @@
       syncHud();
     }
 
-    // 誦經與消耗功德超渡（對小怪、半血菁英起作用；對首領顯示「怨氣深重無法超渡」）
-    function chantVerse() {
-      if (!journey.scripture) { say("先到寺院領取經書，才能誦經。"); return; }
-      if (player.cooldown || player.ladder) return;
-      if (player.mana < chant.cost) { say("靈力不足，無法誦經。"); return; }
-      player.mana -= chant.cost;
-      player.cooldown = 0.65;
-      player.guardUntil = 0;
-      player.wardUntil = time + chant.wardTime;
-      byId("spirit-ward").hidden = false;
-      animatePlayer("chant", 0.58);
-
-      const inRangeSpirits = spirits.filter(s => spiritPresent(s) && Math.hypot(s.x - player.x, s.y - player.y) <= chant.radius);
-      const canTranscend = journey.merit >= exorciseMeritCost;
-      let transcendedCount = 0;
-      let bossBlocked = false;
-
-      if (canTranscend && inRangeSpirits.length > 0) {
-        for (const spirit of inRangeSpirits) {
-          if (spirit.rank === "boss") {
-            bossBlocked = true;
-            effects.push({ type: "text", text: "怨氣深重無法超渡", color: "#ff9b8a", x: spirit.x, y: ground - 108, life: 0.9, total: 0.9 });
-            hurtSpirit(spirit, chant.damage, true);
-          } else if (spirit.rank === "elite" && spirit.resentment > spirit.maxResentment * 0.5) {
-            // 菁英邪祟怨氣高於 50% 時先削弱一半怨氣並鎮魂 2 秒
-            transcendedCount++;
-            holdSpirit(spirit, time + 2.0, "梵音鎮壓");
-            hurtSpirit(spirit, Math.ceil(spirit.maxResentment * 0.45), true);
-            effects.push({ type: "text", text: "菁英怨氣未消，先削半魂！", color: "#ffe39e", x: spirit.x, y: ground - 108, life: 0.85, total: 0.85 });
-          } else {
-            // 小怪（游魂、走屍）或半血以下菁英直接超渡！
-            transcendedCount++;
-            effects.push({ type: "text", text: "功德超渡 · 往生淨土", color: "#fff2a6", x: spirit.x, y: ground - 108, life: 0.9, total: 0.9 });
-            hurtSpirit(spirit, spirit.resentment, true);
-          }
-        }
-      } else {
-        hitSpirits(chant.damage, true, spirit => Math.hypot(spirit.x - player.x, spirit.y - player.y) <= chant.radius);
-      }
-
-      if (transcendedCount > 0) {
-        journey.merit = Math.max(0, journey.merit - exorciseMeritCost);
-        saveGathering();
-        renderDailyRoutine();
-      }
-
-      effects.push({ type: "qin", color: transcendedCount > 0 ? "#ffe587" : "#f6daa7", x: player.x, y: player.y - 28, radius: chant.radius, life: 0.75, total: 0.75 });
-      practiceManual("chant");
-
-      if (bossBlocked && transcendedCount === 0) {
-        say("首領怨氣深重無法超渡！（未消耗功德，護體經文已開啟）");
-      } else if (transcendedCount > 0) {
-        say("消耗 " + exorciseMeritCost + " 點功德念經超渡！剩餘功德 " + journey.merit + " 點。" + (bossBlocked ? "（首領怨氣深重無法超渡）" : ""));
-      } else {
-        say("誦經 · 接下來 4 秒所受邪祟傷害減半。" + (journey.merit < exorciseMeritCost ? "（功德不足 2 點，僅作護體驅邪）" : ""));
-      }
-      syncHud();
-    }
 
     function mastery(key) {
       const copy = journey.copies[key];
@@ -4235,7 +4143,6 @@
       saveGathering();
     }
     function copyManual(key) {
-      if (key === "chant") return;
       if (!returned || returnTab !== "library" || !Object.hasOwn(manuals, key) || journey.copies[key]) return;
       journey.copies[key] = { read: 0, practice: 0 };
       saveGathering();
@@ -4326,14 +4233,13 @@
         }
         if (action === "night") {
           journey.merit += 6;
-          journey.scripture = true;
         }
         saveGathering();
         if (returned) renderReturn();
         else if (choosingBag) renderBag();
         syncHud();
         message = action === "forge" ? "已領取全套五行凡品/良品/上品礦石、草藥與獸材。" :
-          action === "night" ? "已領取夜採藥草、殘息、清心經卷與 6 點功德。" : "已領取傷藥、各階符籙與三種羽箭（含破邪朱砂箭）。";
+          action === "night" ? "已領取夜採藥草、殘息與 6 點功德。" : "已領取傷藥、各階符籙與三種羽箭（含破邪朱砂箭）。";
       }
       byId("gm-message").textContent = message;
       say(message);
